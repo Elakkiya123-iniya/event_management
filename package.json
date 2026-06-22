@@ -1,0 +1,23 @@
+{
+  "name": "event-management-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full stack event management project with separate admin, frontend, and backend apps.",
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:admin": "npm --workspace admin run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:frontend\"",
+    "build": "echo Static React clients do not require a build step",
+    "start": "npm --workspace backend start"
+  },
+  "workspaces": [
+    "backend",
+    "admin",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
