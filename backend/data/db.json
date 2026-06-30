@@ -1,0 +1,51 @@
+{
+  "events": [
+    {
+      "id": "f4a11530-3c70-4aba-830e-e3b5b5d16298",
+      "title": "abs",
+      "category": "Conference",
+      "location": "Krishnagiri",
+      "date": "1124-03-12",
+      "time": "12:42",
+      "capacity": 100,
+      "price": 0,
+      "imageUrl": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5OjcBCgoKDQwNGg8PGjclHyU3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3N//AABEIAJQA3QMBIgACEQEDEQH/xAAcAAABBQEBAQAAAAAAAAAAAAAGAAMEBQcCAQj/xABFEAACAQMDAQYDBQYDBQcFAAABAgMABBEFEiExBhMiQVFhFHGBByMykaEVQlKxwdEz4fBDYpKiwhYXJIKFstIlNERlcv/EABoBAAIDAQEAAAAAAAAAAAAAAAAEAQIDBQb/xAAlEQACAwACAgICAgMAAAAAAAAAAQIDERIhBDFBYRMiMlEUI3H/2gAMAwEAAhEDEQA/AD+2V9vNt5elTrVT+0oCV2/duAPyryznu5IdxUZBIIxTsDs2pQF+Dhhj6Uw30LpdlvGOldyd3ld5A8hXijmupGC7fCW54wOlYM3QgVzwK6PSuQxI/CetR9SujaWM04QuyLkKPM0ew3FpVNqUVzr8EcOSIyUJPmat3cqSB0FA2hXDza1biRdrbyeKOZFmZvCFCk+ZrSSwyXZ7upxT4aSx4/FXeB9KzeGiTOQ1Itx9a9wBzXpAoJ7OHNMzTd3s9CKcuGZIsqBnOKh3E8i2+/uwzkcCrRRRkwHdBn1FdD/CHyqk1XtFp+jWCS6jJtkceCFOXc+w/qeKELn7VhBG3/0Vwo/iuADt9elVbSfZeKbRoULOI8v1zwKkIxI560M9kO1tj2lti1qxjuE/HbyfiHy9aJBIcY2n6VPv0VXXsjaob0RJ8AE7zdzu9Khg6xhyWjHPhGKtTLtHPnUW4vHjI2R5q8X9FZf9ObQX5nzclO72eXrT14ZxBJ3RHefuZpuG9d5hG8e0EU7NNsieQkAJ6",
+      "description": "meeting",
+      "registrations": [
+        {
+          "id": "7e6c0d42-0d31-47af-bb52-ef09588c54d5",
+          "name": "Elakkiya S",
+          "email": "elakkiyainiya1@gmail.com",
+          "phone": "+918778542441",
+          "createdAt": "2026-06-27T07:46:05.632Z"
+        }
+      ]
+    },
+    {
+      "id": "69fd714e-cf51-4194-a7f2-ddb7e7d73056",
+      "title": "Tech Leadership Summit",
+      "category": "Conference",
+      "location": "Bengaluru Convention Centre",
+      "date": "2026-08-18",
+      "time": "10:00",
+      "capacity": 200,
+      "price": 1499,
+      "imageUrl": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
+      "description": "A focused day of product, engineering, and business talks for technology leaders.",
+      "registrations": []
+    },
+    {
+      "id": "3983793c-360b-4668-96f9-2cd873a209e3",
+      "title": "Wedding Expo",
+      "category": "Expo",
+      "location": "Hyderabad International Expo Centre",
+      "date": "2026-09-06",
+      "time": "11:30",
+      "capacity": 350,
+      "price": 499,
+      "imageUrl": "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
+      "description": "Meet decorators, planners, caterers, designers, and venues in one premium event.",
+      "registrations": []
+    }
+  ]
+}

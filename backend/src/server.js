@@ -1,7 +1,16 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { createId, readDb, writeDb } from "./store.js";
+import { 
+  createId, 
+  getEvents, 
+  getEventById, 
+  createEvent, 
+  updateEvent, 
+  deleteEvent, 
+  createRegistration, 
+  getRegistrationsByEventId 
+} from "./store.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,13 +18,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: ["http://localhost:5173", "http://localhost:5174"] }));
 app.use(express.json());
 app.use(morgan("dev"));
-
-const toPublicEvent = (event) => ({
-  ...event,
-  registeredCount: event.registrations.length,
-  seatsLeft: Math.max(Number(event.capacity) - event.registrations.length, 0),
-  registrations: undefined
-});
 
 function validateEvent(payload) {
   const required = ["title", "category", "location", "date", "time", "capacity", "price", "description"];
@@ -36,14 +38,18 @@ function validateEvent(payload) {
   return null;
 }
 
+app.get("/", (_req, res) => {
+  res.json({ message: "Event Management API is running. Access endpoints at /api/events" });
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "event-management-api" });
 });
 
 app.get("/api/events", async (_req, res, next) => {
   try {
-    const db = await readDb();
-    res.json(db.events.map(toPublicEvent));
+    const events = await getEvents();
+    res.json(events);
   } catch (error) {
     next(error);
   }
@@ -51,14 +57,11 @@ app.get("/api/events", async (_req, res, next) => {
 
 app.get("/api/events/:id", async (req, res, next) => {
   try {
-    const db = await readDb();
-    const event = db.events.find((item) => item.id === req.params.id);
-
+    const event = await getEventById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
-
-    res.json(toPublicEvent(event));
+    res.json(event);
   } catch (error) {
     next(error);
   }
@@ -67,13 +70,11 @@ app.get("/api/events/:id", async (req, res, next) => {
 app.post("/api/events", async (req, res, next) => {
   try {
     const error = validateEvent(req.body);
-
     if (error) {
       return res.status(400).json({ message: error });
     }
 
-    const db = await readDb();
-    const event = {
+    const eventToCreate = {
       id: createId(),
       title: req.body.title.trim(),
       category: req.body.category.trim(),
@@ -83,14 +84,13 @@ app.post("/api/events", async (req, res, next) => {
       capacity: Number(req.body.capacity),
       price: Number(req.body.price),
       imageUrl: req.body.imageUrl?.trim() || "",
-      description: req.body.description.trim(),
-      registrations: []
+      description: req.body.description.trim()
     };
 
-    db.events.unshift(event);
-    await writeDb(db);
+    await createEvent(eventToCreate);
+    const createdEvent = await getEventById(eventToCreate.id);
 
-    res.status(201).json(toPublicEvent(event));
+    res.status(201).json(createdEvent);
   } catch (error) {
     next(error);
   }
@@ -99,19 +99,16 @@ app.post("/api/events", async (req, res, next) => {
 app.put("/api/events/:id", async (req, res, next) => {
   try {
     const error = validateEvent(req.body);
-
     if (error) {
       return res.status(400).json({ message: error });
     }
 
-    const db = await readDb();
-    const event = db.events.find((item) => item.id === req.params.id);
-
+    const event = await getEventById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    Object.assign(event, {
+    const updatedEvent = await updateEvent(req.params.id, {
       title: req.body.title.trim(),
       category: req.body.category.trim(),
       location: req.body.location.trim(),
@@ -123,8 +120,7 @@ app.put("/api/events/:id", async (req, res, next) => {
       description: req.body.description.trim()
     });
 
-    await writeDb(db);
-    res.json(toPublicEvent(event));
+    res.json(updatedEvent);
   } catch (error) {
     next(error);
   }
@@ -132,15 +128,12 @@ app.put("/api/events/:id", async (req, res, next) => {
 
 app.delete("/api/events/:id", async (req, res, next) => {
   try {
-    const db = await readDb();
-    const nextEvents = db.events.filter((item) => item.id !== req.params.id);
-
-    if (nextEvents.length === db.events.length) {
+    const event = await getEventById(req.params.id);
+    if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    db.events = nextEvents;
-    await writeDb(db);
+    await deleteEvent(req.params.id);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -155,18 +148,17 @@ app.post("/api/events/:id/register", async (req, res, next) => {
       return res.status(400).json({ message: "name, email, and phone required" });
     }
 
-    const db = await readDb();
-    const event = db.events.find((item) => item.id === req.params.id);
-
+    const event = await getEventById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    if (event.registrations.length >= Number(event.capacity)) {
+    if (event.seatsLeft <= 0) {
       return res.status(409).json({ message: "Event is full" });
     }
 
-    const alreadyRegistered = event.registrations.some(
+    const registrations = await getRegistrationsByEventId(req.params.id);
+    const alreadyRegistered = registrations.some(
       (registration) => registration.email.toLowerCase() === email.toLowerCase()
     );
 
@@ -182,10 +174,10 @@ app.post("/api/events/:id/register", async (req, res, next) => {
       createdAt: new Date().toISOString()
     };
 
-    event.registrations.push(registration);
-    await writeDb(db);
+    const createdRegistration = await createRegistration(event.id, registration);
+    const updatedEvent = await getEventById(event.id);
 
-    res.status(201).json({ registration, event: toPublicEvent(event) });
+    res.status(201).json({ registration: createdRegistration, event: updatedEvent });
   } catch (error) {
     next(error);
   }
@@ -193,16 +185,16 @@ app.post("/api/events/:id/register", async (req, res, next) => {
 
 app.get("/api/events/:id/registrations", async (req, res, next) => {
   try {
-    const db = await readDb();
-    const event = db.events.find((item) => item.id === req.params.id);
-
+    const event = await getEventById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    const registrations = await getRegistrationsByEventId(req.params.id);
+
     res.json({
-      event: toPublicEvent(event),
-      registrations: event.registrations
+      event,
+      registrations
     });
   } catch (error) {
     next(error);

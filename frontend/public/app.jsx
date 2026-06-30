@@ -21,6 +21,9 @@ function App() {
 
   async function loadEvents() {
     const response = await fetch(`${API_URL}/events`);
+    if (!response.ok) {
+      throw new Error("Backend API returned an error");
+    }
     const data = await response.json();
     setEvents(data);
     setSelectedEventId((current) => current || data[0]?.id || "");

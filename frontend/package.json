@@ -5,6 +5,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
+    "build": "babel public/app.jsx --out-file public/app.js",
     "dev": "node server.js",
     "start": "node server.js"
   },

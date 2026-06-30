@@ -1,64 +1,131 @@
-import { promises as fs } from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import crypto from "node:crypto";
+import dotenv from "dotenv";
+import { MongoClient } from "mongodb";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dataDir = path.join(__dirname, "..", "data");
-const dbPath = path.join(dataDir, "db.json");
 
-const seedData = {
-  events: [
-    {
-      id: crypto.randomUUID(),
-      title: "Tech Leadership Summit",
-      category: "Conference",
-      location: "Bengaluru Convention Centre",
-      date: "2026-08-18",
-      time: "10:00",
-      capacity: 200,
-      price: 1499,
-      imageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
-      description: "A focused day of product, engineering, and business talks for technology leaders.",
-      registrations: []
-    },
-    {
-      id: crypto.randomUUID(),
-      title: "Wedding Expo",
-      category: "Expo",
-      location: "Hyderabad International Expo Centre",
-      date: "2026-09-06",
-      time: "11:30",
-      capacity: 350,
-      price: 499,
-      imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80",
-      description: "Meet decorators, planners, caterers, designers, and venues in one premium event.",
-      registrations: []
-    }
-  ]
-};
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
-async function ensureDb() {
-  await fs.mkdir(dataDir, { recursive: true });
-  try {
-    await fs.access(dbPath);
-  } catch {
-    await fs.writeFile(dbPath, JSON.stringify(seedData, null, 2));
+const mongoUrl = process.env.MONGODB_URL;
+const dbName = process.env.MONGODB_DB_NAME || "event_management";
+
+if (!mongoUrl) {
+  throw new Error("MONGODB_URL is required. Add it to backend/.env");
+}
+
+const client = new MongoClient(mongoUrl);
+let eventsCollection;
+let registrationsCollection;
+
+async function connect() {
+  if (!eventsCollection) {
+    await client.connect();
+    const db = client.db(dbName);
+    eventsCollection = db.collection("events");
+    registrationsCollection = db.collection("registrations");
+    
+    await eventsCollection.createIndex({ id: 1 }, { unique: true });
+    await registrationsCollection.createIndex({ id: 1 }, { unique: true });
+    await registrationsCollection.createIndex({ eventId: 1 });
   }
 }
 
-export async function readDb() {
-  await ensureDb();
-  const file = await fs.readFile(dbPath, "utf8");
-  return JSON.parse(file);
-}
-
-export async function writeDb(data) {
-  await ensureDb();
-  await fs.writeFile(dbPath, JSON.stringify(data, null, 2));
+function normalize(doc) {
+  if (!doc) return null;
+  const { _id, ...rest } = doc;
+  return rest;
 }
 
 export function createId() {
   return crypto.randomUUID();
+}
+
+export async function getEvents() {
+  await connect();
+  const pipeline = [
+    {
+      $lookup: {
+        from: "registrations",
+        localField: "id",
+        foreignField: "eventId",
+        as: "regs"
+      }
+    },
+    {
+      $addFields: {
+        registeredCount: { $size: "$regs" },
+        seatsLeft: { $max: [ { $subtract: [ { $toInt: "$capacity" }, { $size: "$regs" } ] }, 0 ] }
+      }
+    },
+    {
+      $project: { regs: 0 }
+    },
+    {
+      $sort: { date: 1, time: 1 }
+    }
+  ];
+  
+  const events = await eventsCollection.aggregate(pipeline).toArray();
+  return events.map(normalize);
+}
+
+export async function getEventById(id) {
+  await connect();
+  const pipeline = [
+    { $match: { id } },
+    {
+      $lookup: {
+        from: "registrations",
+        localField: "id",
+        foreignField: "eventId",
+        as: "regs"
+      }
+    },
+    {
+      $addFields: {
+        registeredCount: { $size: "$regs" },
+        seatsLeft: { $max: [ { $subtract: [ { $toInt: "$capacity" }, { $size: "$regs" } ] }, 0 ] }
+      }
+    },
+    {
+      $project: { regs: 0 }
+    }
+  ];
+  
+  const results = await eventsCollection.aggregate(pipeline).toArray();
+  return normalize(results[0]);
+}
+
+export async function createEvent(event) {
+  await connect();
+  await eventsCollection.insertOne(event);
+  return event;
+}
+
+export async function updateEvent(id, updateData) {
+  await connect();
+  await eventsCollection.updateOne({ id }, { $set: updateData });
+  return getEventById(id);
+}
+
+export async function deleteEvent(id) {
+  await connect();
+  await eventsCollection.deleteOne({ id });
+  await registrationsCollection.deleteMany({ eventId: id });
+}
+
+export async function createRegistration(eventId, registration) {
+  await connect();
+  const regDoc = { ...registration, eventId };
+  await registrationsCollection.insertOne(regDoc);
+  return regDoc;
+}
+
+export async function getRegistrationsByEventId(eventId) {
+  await connect();
+  const regs = await registrationsCollection.find({ eventId }).toArray();
+  return regs.map(normalize);
 }

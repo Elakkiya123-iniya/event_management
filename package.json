@@ -9,7 +9,7 @@
     "dev:admin": "npm --workspace admin run dev",
     "dev:frontend": "npm --workspace frontend run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:frontend\"",
-    "build": "echo Static React clients do not require a build step",
+    "build": "npm --workspace admin run build && npm --workspace frontend run build",
     "start": "npm --workspace backend start"
   },
   "workspaces": [
@@ -18,6 +18,9 @@
     "frontend"
   ],
   "devDependencies": {
+    "@babel/cli": "^8.0.1",
+    "@babel/core": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
     "concurrently": "^9.2.1"
   }
 }
